@@ -3,7 +3,7 @@ What is Heat Map?
 
 Heat Map is an overlay for the Map Kit Framework to visualize location-based datasets.
 
-[Breweries Demo](https://github.com/ryanolsonk/HeatMap/blob/master/shots/example.png)
+[Breweries Demo](https://github.com/ryanolsonk/HeatMapDemo/blob/master/shots/example.png)
 
 Using Heat Map in your project is simple. Create a new HeatMap object and pass it an NSDictionary, with NSValue keys encoded as MKMapPoints and NSNumber values representing the relative heat of that map point. You must also set your controller as the MKMapViewDelegate for your map view, and return a HeatMapView in mapView:viewForOverlay:.
 
