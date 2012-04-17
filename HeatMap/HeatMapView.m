@@ -116,8 +116,8 @@
                 for(int i = 0; i < 2 * RADIUS; i++) {
                     for(int j = 0; j < 2 * RADIUS; j++) {
                         //find the array index
-                        int column = matrixCoord.x - RADIUS + i;
-                        int row = matrixCoord.y - RADIUS + j;
+                        int column = floor(matrixCoord.x - RADIUS + i);
+                        int row = floor(matrixCoord.y - RADIUS + j);
                         int index = columns * row + column;
                         
                         //make sure this is a valid array index
@@ -138,14 +138,6 @@
                 int column = i % columns;
                 int row = i / columns;
                 CGFloat red, green, blue, alpha;
-                
-                //weird behaviour on the edges of the rect.
-                //just steal the neighbour's value, makes it look much better
-                //this is HACK and should be fixed
-                if(row == 0) 
-                    pointValues[i] = pointValues[i + columns];
-                else if(column == 0) 
-                    pointValues[i] = pointValues[i + 1];
                 
                 [self colorForValue:pointValues[i] red:&red green:&green blue:&blue alpha:&alpha];
                 CGContextSetRGBFillColor(context, red, green, blue, alpha);
