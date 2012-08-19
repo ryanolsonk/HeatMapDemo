@@ -30,8 +30,12 @@ static const int kSBZoomZeroDimension = 256;
 static const int kSBMapKitPoints = 536870912;
 static const int kSBZoomLevels = 20;
 
-//alterable constant to change look of heat map
+// Alterable constant to change look of heat map
 static const int kSBScalePower = 4;
+
+// Alterable constant to trade off accuracy with performance
+// Increase for big data sets which draw slowly
+static const int kSBScreenPointsPerBucket = 10;
 
 @interface HeatMap()
 
@@ -130,6 +134,7 @@ static const int kSBScalePower = 4;
 - (NSDictionary *)mapPointsWithHeatInMapRect:(MKMapRect)rect atScale:(MKZoomScale)scale
 {
     NSMutableDictionary *toReturn = [[NSMutableDictionary alloc] init];
+    int bucketDelta = kSBScreenPointsPerBucket / scale;
     
     double zoomScale = log2(1/scale);
     double slope = (self.zoomedOutMax - self.max) / (kSBZoomLevels - 1);
@@ -144,11 +149,24 @@ static const int kSBScalePower = 4;
         [key getValue:&point];
         
         if(MKMapRectContainsPoint(rect, point)) {
-            //scale the value down by the max and add it to the return dictionary
+            // Scale the value down by the max and add it to the return dictionary
             NSNumber *value = [self.pointsWithHeat objectForKey:key];
             double unscaled = [value doubleValue];
             double scaled = unscaled / scaleFactor;
-            [toReturn setObject:[NSNumber numberWithDouble:scaled] forKey:key];
+            
+            MKMapPoint bucketPoint;
+            int originalX = point.x;
+            int originalY = point.y;
+            bucketPoint.x = originalX - originalX % bucketDelta + bucketDelta / 2;
+            bucketPoint.y = originalY - originalY % bucketDelta + bucketDelta / 2;
+            NSValue *bucketKey = [NSValue value:&bucketPoint withObjCType:@encode(MKMapPoint)];
+            
+            NSNumber *existingValue = [toReturn objectForKey:bucketKey];
+            if (existingValue) {
+                scaled += [existingValue doubleValue];
+            }
+            
+            [toReturn setObject:[NSNumber numberWithDouble:scaled] forKey:bucketKey];
         }
     }
     
