@@ -26,6 +26,22 @@
 #import "HeatMapView.h"
 #import <CoreGraphics/CoreGraphics.h>
 
+// This sets the spread of the heat from each map point (in screen pts.)
+static const NSInteger kSBHeatRadiusInPoints = 48;
+
+// These affect the transparency of the heatmap
+// Colder areas will be more transparent
+// Currently the alpha is a two piece linear function of the value
+// Play with the pivot point and max alpha to affect the look of the heatmap
+
+// This number should be between 0 and 1
+static const CGFloat kSBAlphaPivotX = 0.333;
+
+// This number should be between 0 and MAX_ALPHA
+static const CGFloat kSBAlphaPivotY = 0.5;
+
+// This number should be between 0 and 1
+static const CGFloat kSBMaxAlpha = 0.85;
 @implementation HeatMapView
 
 - (id)initWithOverlay:(id <MKOverlay>)overlay
@@ -41,10 +57,10 @@
     if (value > 1) value = 1;
     value = sqrt(value);
     
-    if (value < PIVOT_X) {
-        *alpha = value * PIVOT_Y / PIVOT_X;
+    if (value < kSBAlphaPivotY) {
+        *alpha = value * kSBAlphaPivotY / kSBAlphaPivotX;
     } else {
-        *alpha = PIVOT_Y + ((MAX_ALPHA - PIVOT_Y) / (1 - PIVOT_X)) * (value - PIVOT_X);
+        *alpha = kSBAlphaPivotY + ((kSBMaxAlpha - kSBAlphaPivotY) / (1 - kSBAlphaPivotX)) * (value - kSBAlphaPivotX);
     }
     
     //formula converts a number from 0 to 1.0 to an rgb color.
@@ -89,10 +105,10 @@
         //pad out the mapRect with the radius on all sides. 
         // we care about points that are not in (but close to) this rect
         CGRect paddedRect = [self rectForMapRect:mapRect];
-        paddedRect.origin.x -= RADIUS / zoomScale;
-        paddedRect.origin.y -= RADIUS / zoomScale;
-        paddedRect.size.width += 2 * RADIUS / zoomScale;
-        paddedRect.size.height += 2 * RADIUS / zoomScale;
+        paddedRect.origin.x -= kSBHeatRadiusInPoints / zoomScale;
+        paddedRect.origin.y -= kSBHeatRadiusInPoints / zoomScale;
+        paddedRect.size.width += 2 * kSBHeatRadiusInPoints / zoomScale;
+        paddedRect.size.height += 2 * kSBHeatRadiusInPoints / zoomScale;
         MKMapRect paddedMapRect = [self mapRectForRect:paddedRect];
         
         //Get the dictionary of values out of the model for this mapRect and zoomScale.
@@ -113,18 +129,18 @@
             
             if (value > 0) { //don't bother with 0 or negative values
                 //iterate through surrounding pixels and increase
-                for(int i = 0; i < 2 * RADIUS; i++) {
-                    for(int j = 0; j < 2 * RADIUS; j++) {
+                for(int i = 0; i < 2 * kSBHeatRadiusInPoints; i++) {
+                    for(int j = 0; j < 2 * kSBHeatRadiusInPoints; j++) {
                         //find the array index
-                        int column = floor(matrixCoord.x - RADIUS + i);
-                        int row = floor(matrixCoord.y - RADIUS + j);
+                        int column = floor(matrixCoord.x - kSBHeatRadiusInPoints + i);
+                        int row = floor(matrixCoord.y - kSBHeatRadiusInPoints + j);
                         int index = columns * row + column;
                         
                         //make sure this is a valid array index
                         if(row >= 0 && column >= 0 && row < rows && column < columns) {
                             //compute the point's new value based on linear radial falloff
-                            double distance = sqrt((i - RADIUS) * (i - RADIUS) + (j - RADIUS) * (j - RADIUS));
-                            float newValue = value - value / RADIUS * distance;
+                            double distance = sqrt((i - kSBHeatRadiusInPoints) * (i - kSBHeatRadiusInPoints) + (j - kSBHeatRadiusInPoints) * (j - kSBHeatRadiusInPoints));
+                            float newValue = value - value / kSBHeatRadiusInPoints * distance;
                             if(newValue < 0) newValue = 0;
                             pointValues[index] += newValue;
                         }

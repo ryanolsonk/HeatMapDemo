@@ -26,24 +26,6 @@
 #import <MapKit/MapKit.h>
 #import "HeatMap.h"
 
-
-//this sets the spread of the heat from each map point (in screen pts.)
-#define RADIUS 30
-
-//these affect the transparency of the heatmap
-//colder areas will be more transparent
-//currently the alpha is a two piece linear function of the value
-//play with the pivot point and max alpha to affect the look of the heatmap
-
-//should be between 0 and 1
-#define PIVOT_X 0.333 
-
-//should be between 0 and MAX_ALPHA
-#define PIVOT_Y 0.5
-
-//should be between 0 and 1
-#define MAX_ALPHA 0.85
-
 @interface HeatMapView : MKOverlayView
 
 @end
