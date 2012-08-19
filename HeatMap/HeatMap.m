@@ -25,13 +25,13 @@
 
 #import "HeatMap.h"
 
-#define PADDING 100000
-#define ZOOM_0_DIMENSION 256
-#define MAPKIT_POINTS 536870912
-#define ZOOM_LEVELS 20
+static const CGFloat kSBMapRectPadding = 100000;
+static const int kSBZoomZeroDimension = 256;
+static const int kSBMapKitPoints = 536870912;
+static const int kSBZoomLevels = 20;
 
 //alterable constant to change look of heat map
-#define POWER 4
+static const int kSBScalePower = 4;
 
 @interface HeatMap()
 
@@ -69,7 +69,7 @@
         [[[newHeatMapData allKeys] lastObject] getValue:&upperLeftPoint];
         lowerRightPoint = upperLeftPoint;
         
-        float *buckets = calloc(ZOOM_0_DIMENSION * ZOOM_0_DIMENSION, sizeof(float));
+        float *buckets = calloc(kSBZoomZeroDimension * kSBZoomZeroDimension, sizeof(float));
         
         //iterate through to find the max and the bounding region
         //set up the internal model with the data
@@ -90,15 +90,15 @@
             }
             
             //bucket the map point:
-            int col = point.x / (MAPKIT_POINTS / ZOOM_0_DIMENSION);
-            int row = point.y / (MAPKIT_POINTS / ZOOM_0_DIMENSION);
+            int col = point.x / (kSBMapKitPoints / kSBZoomZeroDimension);
+            int row = point.y / (kSBMapKitPoints / kSBZoomZeroDimension);
         
-            int offset = ZOOM_0_DIMENSION * row + col;
+            int offset = kSBZoomZeroDimension * row + col;
         
             buckets[offset] += [value doubleValue];
         }
     
-        for (int i = 0; i < ZOOM_0_DIMENSION * ZOOM_0_DIMENSION; i++) {
+        for (int i = 0; i < kSBZoomZeroDimension * kSBZoomZeroDimension; i++) {
             if (buckets[i] > self.zoomedOutMax) 
                 self.zoomedOutMax = buckets[i];
         }
@@ -107,10 +107,10 @@
         
         //make the new bounding region from the two corners
         //probably should do some cusioning
-        double width = lowerRightPoint.x - upperLeftPoint.x + PADDING;
-        double height = lowerRightPoint.y - upperLeftPoint.y + PADDING;
+        double width = lowerRightPoint.x - upperLeftPoint.x + kSBMapRectPadding;
+        double height = lowerRightPoint.y - upperLeftPoint.y + kSBMapRectPadding;
         
-        self.boundingRect = MKMapRectMake(upperLeftPoint.x - PADDING / 2, upperLeftPoint.y - PADDING / 2, width, height);
+        self.boundingRect = MKMapRectMake(upperLeftPoint.x - kSBMapRectPadding / 2, upperLeftPoint.y - kSBMapRectPadding / 2, width, height);
         self.center = MKCoordinateForMapPoint(MKMapPointMake(upperLeftPoint.x + width / 2, upperLeftPoint.y + height / 2));
         
         _pointsWithHeat = newHeatMapData;
@@ -132,8 +132,8 @@
     NSMutableDictionary *toReturn = [[NSMutableDictionary alloc] init];
     
     double zoomScale = log2(1/scale);
-    double slope = (self.zoomedOutMax - self.max) / (ZOOM_LEVELS - 1);
-    double x = pow(zoomScale, POWER) / pow(ZOOM_LEVELS, POWER - 1);
+    double slope = (self.zoomedOutMax - self.max) / (kSBZoomLevels - 1);
+    double x = pow(zoomScale, kSBScalePower) / pow(kSBZoomLevels, kSBScalePower - 1);
     double scaleFactor = (x - 1) * slope + self.max;
     
     if (scaleFactor < self.max) 
