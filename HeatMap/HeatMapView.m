@@ -42,14 +42,40 @@ static const CGFloat kSBAlphaPivotY = 0.5;
 
 // This number should be between 0 and 1
 static const CGFloat kSBMaxAlpha = 0.85;
+
+@interface HeatMapView ()
+
+@property (nonatomic, readonly) float *scaleMatrix;
+
+@end
+
 @implementation HeatMapView
+
+@synthesize scaleMatrix = _scaleMatrix;
 
 - (id)initWithOverlay:(id <MKOverlay>)overlay
 {
     if (self = [super initWithOverlay:overlay]) {
-        
+        _scaleMatrix = malloc(2 * kSBHeatRadiusInPoints * 2 * kSBHeatRadiusInPoints * sizeof(float));
+        [self populateScaleMatrix];
     }
     return self;
+}
+
+- (void)populateScaleMatrix
+{
+    for(int i = 0; i < 2 * kSBHeatRadiusInPoints; i++) {
+        for(int j = 0; j < 2 * kSBHeatRadiusInPoints; j++) {
+            float distance = sqrt((i - kSBHeatRadiusInPoints) * (i - kSBHeatRadiusInPoints) + (j - kSBHeatRadiusInPoints) * (j - kSBHeatRadiusInPoints));
+            float scaleFactor = 1 - distance / kSBHeatRadiusInPoints;
+            if (scaleFactor < 0) {
+                scaleFactor = 0;
+            } else {
+                scaleFactor = (expf(-distance/10.0) - expf(-kSBHeatRadiusInPoints/10.0)) / expf(0);
+            }
+            _scaleMatrix[j * 2 * kSBHeatRadiusInPoints + i] = scaleFactor;
+        }
+    }
 }
 
 - (void)colorForValue:(double)value red:(CGFloat *)red green:(CGFloat *)green blue:(CGFloat *)blue alpha:(CGFloat *)alpha
@@ -134,15 +160,11 @@ static const CGFloat kSBMaxAlpha = 0.85;
                         //find the array index
                         int column = floor(matrixCoord.x - kSBHeatRadiusInPoints + i);
                         int row = floor(matrixCoord.y - kSBHeatRadiusInPoints + j);
-                        int index = columns * row + column;
                         
                         //make sure this is a valid array index
                         if(row >= 0 && column >= 0 && row < rows && column < columns) {
-                            //compute the point's new value based on linear radial falloff
-                            double distance = sqrt((i - kSBHeatRadiusInPoints) * (i - kSBHeatRadiusInPoints) + (j - kSBHeatRadiusInPoints) * (j - kSBHeatRadiusInPoints));
-                            float newValue = value - value / kSBHeatRadiusInPoints * distance;
-                            if(newValue < 0) newValue = 0;
-                            pointValues[index] += newValue;
+                            int index = columns * row + column;
+                            pointValues[index] += value * _scaleMatrix[j * 2 * kSBHeatRadiusInPoints + i];
                         }
                     }
                 }
@@ -170,6 +192,11 @@ static const CGFloat kSBMaxAlpha = 0.85;
         
         free(pointValues);
     }
+}
+
+- (void)dealloc
+{
+    free(_scaleMatrix);
 }
 
 @end
